@@ -1,9 +1,9 @@
 class Lesson {
   final String id;
   final String title;
+  final String videoUrl; // Changed back to videoUrl for your custom implementation
   final String description;
   final String thumbnailUrl;
-  final String videoUrl; // Changed back to videoUrl for your custom implementation
   final String instructor;
   final String difficulty;
   final String duration;

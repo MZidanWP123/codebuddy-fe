@@ -54,7 +54,7 @@ class _AccountPageState extends State<AccountPage> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.logout, color: Colors.white,),
             onPressed: _logout,
           ),
         ],

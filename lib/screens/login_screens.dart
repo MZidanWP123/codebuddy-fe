@@ -99,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 40),
                 Center(
                   child: Image.asset(
-                    'assets/images/login_illustration.png',
+                    'assets/images/login-illustration.png',
                     height: 200,
                   ),
                 ),
