@@ -24,13 +24,11 @@ class NoteServices {
 
   // Create a new note
   static Future<http.Response> createNote({
-    required String noteTitle,
     required int userId,
     required int courseId,
     required String note,
   }) async {
     Map data = {
-      "note_title": noteTitle,
       "user_id": userId,
       "course_id": courseId,
       "note": note,

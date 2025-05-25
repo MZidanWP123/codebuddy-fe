@@ -22,17 +22,17 @@ class CourseServices {
     required String title,
     required String url,
     String? description,
-    String? thumbnail,
     required String createdBy,
+    String level = "beginner",
   }) async {
     Map<String, dynamic> data = {
       "title": title,
       "url": url,
       "created_by": createdBy,
+      "level": level,
     };
 
     if (description != null) data["description"] = description;
-    if (thumbnail != null) data["thumbnail"] = thumbnail;
 
     var body = json.encode(data);
     var endpoint = Uri.parse('$baseURL/courses/create');
@@ -46,16 +46,16 @@ class CourseServices {
     String? title,
     String? url,
     String? description,
-    String? thumbnail,
     String? createdBy,
+    String? level,
   }) async {
     Map<String, dynamic> data = {};
 
     if (title != null) data["title"] = title;
     if (url != null) data["url"] = url;
     if (description != null) data["description"] = description;
-    if (thumbnail != null) data["thumbnail"] = thumbnail;
     if (createdBy != null) data["created_by"] = createdBy;
+    if (level != null) data["level"] = level;
 
     var body = json.encode(data);
     var endpoint = Uri.parse('$baseURL/courses/$id');
