@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:flutter_windowmanager/flutter_windowmanager.dart';
 import '../models/lesson.dart';
 import '../models/notes.dart';
 import '../widgets/custom_video_player.dart';
@@ -16,6 +18,16 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   bool _isNotesVisible = false;
   final TextEditingController _notesController = TextEditingController();
   bool _hasUnsavedChanges = false;
+
+   @override
+  void initState() {
+    super.initState();
+    _secureScreen();
+  }
+
+   Future<void> _secureScreen() async {
+    await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
+  }
 
   @override
   void dispose() {
