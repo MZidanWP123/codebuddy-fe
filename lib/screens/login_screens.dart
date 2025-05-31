@@ -1,12 +1,12 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+//import 'package:shared_preferences/shared_preferences.dart';
+//import 'package:finalprojectapp/screens/lesson_screens.dart';
+import 'package:finalprojectapp/services/auth_services.dart';
+import 'package:finalprojectapp/services/globals.dart';
 import '../utils/app_colors.dart';
-import '../services/auth_services.dart';
-import '../services/globals.dart';
-import 'register_screens.dart'; // Perbaikan nama file import (hapus spasi)
-import '../pages/account_page.dart'; // Sesuaikan dengan path yang benar
+import 'register_screens.dart';
+import 'package:finalprojectapp/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -29,7 +29,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // Fungsi login dengan backend
+  // Fungsi login yang disesuaikan dengan AuthServices baru
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -37,38 +37,32 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       try {
-        // Menggunakan AuthServices dari kode kedua
-        http.Response response = await AuthServices.login(
-          _emailController.text, 
-          _passwordController.text
+        final responseData = await AuthServices.login(
+          _emailController.text,
+          _passwordController.text,
         );
-        
-        Map responseMap = jsonDecode(response.body);
-        
-        if (response.statusCode == 200) {
-          // Simpan token dan data user ke SharedPreferences
+
+        if (!mounted) return;
+
+        if (responseData != null) {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('token', responseMap['token']);
-          await prefs.setString('name', responseMap['user']['name']);
-          await prefs.setString('email', responseMap['user']['email']);
-          
-          if (!mounted) return;
-          
-          // Navigasi ke halaman account
+          await prefs.setInt('user_id', responseData['user']['id']);
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (BuildContext context) => const AccountPage(),
+              builder: (BuildContext context) => const MainNavigationScreen(),
             ),
           );
         } else {
-          if (!mounted) return;
-          // Tampilkan error
-          errorSnackBar(context, responseMap.values.first);
+          errorSnackBar(
+            context,
+            'Login gagal. Periksa email dan password Anda.',
+          );
         }
       } catch (e) {
-        // Tangani error koneksi atau parsing
-        errorSnackBar(context, 'Connection error: ${e.toString()}');
+        if (mounted) {
+          errorSnackBar(context, 'Terjadi kesalahan: ${e.toString()}');
+        }
       } finally {
         if (mounted) {
           setState(() {
@@ -80,9 +74,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _navigateToSignup() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const SignupScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const SignupScreen()));
   }
 
   @override
@@ -128,7 +122,9 @@ class _LoginPageState extends State<LoginPage> {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your email';
                           }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          if (!RegExp(
+                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                          ).hasMatch(value)) {
                             return 'Please enter a valid email';
                           }
                           return null;
@@ -143,7 +139,9 @@ class _LoginPageState extends State<LoginPage> {
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
                             onPressed: () {
                               setState(() {
@@ -162,28 +160,29 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            // Forgot password logic
-                          },
-                          child: const Text('Forgot Password?'),
-                        ),
+                        // child: TextButton(
+                        //   onPressed: () {
+                        //     // Forgot password logic
+                        //   },
+                        //   child: const Text('Forgot Password?'),
+                        // ),
                       ),
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _login,
-                          child: _isLoading 
-                            ? const SizedBox(
-                                width: 20, 
-                                height: 20, 
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                )
-                              )
-                            : const Text('Login Now'),
+                          child:
+                              _isLoading
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                  : const Text('Login Now'),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -192,9 +191,7 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           Text(
                             'Don\'t Have An Account?',
-                            style: TextStyle(
-                              color: AppColors.secondary,
-                            ),
+                            style: TextStyle(color: AppColors.secondary),
                           ),
                           TextButton(
                             onPressed: _navigateToSignup,

@@ -1,3 +1,4 @@
+// auth_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'globals.dart';
@@ -20,7 +21,7 @@ class AuthServices {
     return response;
   }
 
-  static Future<http.Response> login(String email, String password) async {
+  static Future<Map<String, dynamic>?> login(String email, String password) async {
     Map data = {
       "email": email,
       "password": password,
@@ -32,6 +33,15 @@ class AuthServices {
       headers: headers,
       body: body,
     );
-    return response;
+
+    if (response.statusCode == 200) {
+      final jsonResponse = json.decode(response.body);
+      token = jsonResponse['token']; // Ambil dan simpan token dari Laravel
+      print("Token disimpan: $token");
+      return jsonResponse;
+    } else {
+      print("Login gagal: ${response.body}");
+      return null;
+    }
   }
 }

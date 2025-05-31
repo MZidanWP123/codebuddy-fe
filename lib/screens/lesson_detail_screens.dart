@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
-import 'package:flutter_windowmanager/flutter_windowmanager.dart';
-import '../models/lesson.dart';
+import '../models/course.dart';
 import '../models/notes.dart';
+import '../services/note_services.dart';
 import '../widgets/custom_video_player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LessonDetailScreen extends StatefulWidget {
-  final Lesson lesson;
+  final Course course;
 
-  const LessonDetailScreen({super.key, required this.lesson});
+  const LessonDetailScreen({super.key, required this.course});
 
   @override
   State<LessonDetailScreen> createState() => _LessonDetailScreenState();
@@ -18,15 +18,13 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   bool _isNotesVisible = false;
   final TextEditingController _notesController = TextEditingController();
   bool _hasUnsavedChanges = false;
+  Note? _userNote;
+  bool _isLoading = true;
 
-   @override
+  @override
   void initState() {
     super.initState();
-    _secureScreen();
-  }
-
-   Future<void> _secureScreen() async {
-    await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
+    _loadUserNote();
   }
 
   @override
@@ -35,89 +33,88 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     super.dispose();
   }
 
+  Future<void> _loadUserNote() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentUserId = prefs.getInt('user_id') ?? 0;
+      final notes = await NoteServices.getNotes(
+        userId: currentUserId,
+      ); // pakai userId dari auth/login
+      final lessonNote = notes.firstWhere(
+        (n) => n.lessonId == widget.course.id,
+        orElse:
+            () => Note(
+              id: '',
+              lessonTitle: widget.course.title,
+              userId: currentUserId.toString(),
+              lessonId: widget.course.id,
+              content: '',
+              createdAt: DateTime.now(),
+            ),
+      );
+
+      setState(() {
+        _userNote = lessonNote.id.isNotEmpty ? lessonNote : null;
+        _notesController.text = lessonNote.content;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      // tampilkan snackbar kalau perlu
+    }
+  }
+
   void _toggleNotes() {
     setState(() {
       _isNotesVisible = !_isNotesVisible;
     });
   }
 
-  void _saveNotes() {
-    if (_notesController.text.trim().isEmpty) return;
-    
-    // In a real app, you would save this to a database
-    final newNote = Note(
-      id: DateTime.now().toString(),
-      lessonId: widget.lesson.id,
-      lessonTitle: widget.lesson.title,
-      content: _notesController.text,
-      createdAt: DateTime.now(),
-    );
-    
-    // Add to the sample notes list
-    sampleNotes.add(newNote);
-    
-    // Close the notes panel
+  Future<void> _saveNotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('user_id') ?? 0;
+    print("User ID dari SharedPreferences: $userId");
+    final CourseId = int.parse(widget.course.id);
+    final content = _notesController.text.trim();
+
+    if (_userNote != null) {
+      await NoteServices.updateNote(
+        id: int.parse(_userNote!.id),
+        content: content,
+      );
+    } else {
+      await NoteServices.createNote(
+        userId: userId,
+        courseId: CourseId,
+        content: content,
+      );
+    }
+
     setState(() {
       _isNotesVisible = false;
-      _notesController.clear();
       _hasUnsavedChanges = false;
     });
-    
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Note saved successfully')),
-    );
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Note saved successfully')));
   }
 
   void _showUnsavedChangesDialog() {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Unsaved changes',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const Text(
-                'Do you want to save or discard changes?',
-                style: TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Unsaved changes'),
+            content: const Text('Do you want to save or discard changes?'),
+            actions: [
+              TextButton(
                 onPressed: () {
                   Navigator.pop(context);
                   _saveNotes();
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1D2A44),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 45),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('Confirm'),
+                child: const Text('Save'),
               ),
-              const SizedBox(height: 8),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -127,23 +124,19 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                     _hasUnsavedChanges = false;
                   });
                 },
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 45),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                child: const Text('Discard'),
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Watch & Write'),
@@ -160,44 +153,47 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
       ),
       body: Column(
         children: [
-          // YouTube Video Player - Always visible at the top
-          CustomVideoPlayer(youtubeUrl: widget.lesson.videoUrl),
-          
-          // Lesson details and notes section
+          CustomVideoPlayer(youtubeUrl: widget.course.videoUrl),
           Expanded(
             child: Stack(
               children: [
-                // Lesson details - scrollable
                 SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.lesson.title,
+                        widget.course.title,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      
+                      const SizedBox(height: 8),
                       // Instructor
                       Row(
                         children: [
-                          const Icon(Icons.person, size: 16, color: Colors.grey),
+                          const Icon(
+                            Icons.person,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            widget.lesson.instructor,
+                            widget.course.instructor,
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
-                      
+                      const SizedBox(height: 4),
                       // Difficulty
                       Row(
                         children: [
-                          const Icon(Icons.bar_chart, size: 16, color: Colors.grey),
+                          const Icon(
+                            Icons.bar_chart,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(width: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -209,7 +205,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              widget.lesson.difficulty,
+                              widget.course.difficulty,
                               style: TextStyle(
                                 color: Colors.blue[800],
                                 fontSize: 12,
@@ -218,37 +214,12 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                           ),
                         ],
                       ),
-                      
-                      // Duration
-                      Row(
-                        children: [
-                          const Icon(Icons.access_time, size: 16, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text(
-                            widget.lesson.duration,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      
                       const SizedBox(height: 16),
-                      const Text(
-                        'Description',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(widget.lesson.description),
-                      
-                      // Extra space for the button
+                      Text(widget.course.description),
                       const SizedBox(height: 100),
                     ],
                   ),
                 ),
-                
-                // Take Notes button - fixed at bottom
                 Positioned(
                   left: 0,
                   right: 0,
@@ -270,8 +241,6 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                     ),
                   ),
                 ),
-                
-                // Notes panel - slides up from bottom but doesn't cover video
                 if (_isNotesVisible)
                   Positioned(
                     left: 0,
@@ -288,14 +257,13 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                       ),
                       child: Column(
                         children: [
-                          // Header
                           Padding(
                             padding: const EdgeInsets.all(16),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  widget.lesson.title,
+                                  widget.course.title,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
@@ -303,7 +271,10 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.close, color: Colors.white),
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                  ),
                                   onPressed: () {
                                     if (_hasUnsavedChanges) {
                                       _showUnsavedChangesDialog();
@@ -315,31 +286,30 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                               ],
                             ),
                           ),
-                          
-                          // Notes text area
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: TextField(
                                 controller: _notesController,
                                 maxLines: null,
                                 expands: true,
                                 style: const TextStyle(color: Colors.white),
                                 decoration: const InputDecoration(
-                                  hintText: 'Pelajari dasar-dasar pemrograman dengan contoh yang mudah dipahami. Kursus ini cocok untuk pemula yang ingin memulai perjalanan coding mereka.',
+                                  hintText: 'Tulis catatanmu di sini...',
                                   hintStyle: TextStyle(color: Colors.white70),
                                   border: InputBorder.none,
                                 ),
                                 onChanged: (value) {
                                   setState(() {
-                                    _hasUnsavedChanges = value.trim().isNotEmpty;
+                                    _hasUnsavedChanges =
+                                        value.trim().isNotEmpty;
                                   });
                                 },
                               ),
                             ),
                           ),
-                          
-                          // Save button
                           Padding(
                             padding: const EdgeInsets.all(16),
                             child: ElevatedButton(

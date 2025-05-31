@@ -1,13 +1,26 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:finalprojectapp/services/globals.dart';
+import 'package:finalprojectapp/models/course.dart'; // pastikan path ini sesuai
 
 class CourseServices {
-  // Get all courses
+  // Get all courses (raw http.Response)
   static Future<http.Response> getAllCourses() async {
-    var url = Uri.parse('$baseURL/courses');
+    var url = Uri.parse('${baseURL}courses');
     http.Response response = await http.get(url, headers: headers);
     return response;
+  }
+
+  // Get all courses as List<Lesson>
+  static Future<List<Course>> fetchAllCourses() async {
+    final response = await getAllCourses();
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => Course.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load courses: ${response.statusCode}');
+    }
   }
 
   // Search course by title

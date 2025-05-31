@@ -1,10 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:finalprojectapp/screens/login_screens.dart'; // ganti dengan path file LoginPage-mu
+import 'package:finalprojectapp/utils/app_colors.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late SharedPreferences prefs;
+  String? name;
+  String? email;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    prefs = await SharedPreferences.getInstance();
+    setState(() {
+      name = prefs.getString('name') ?? 'User';
+      email = prefs.getString('email') ?? 'user@example.com';
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _logout() async {
+    await prefs.clear();
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+      (route) => false,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -34,19 +77,24 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     child: ClipOval(
                       child: Image.asset(
-                        'assets/images/profile.png',
+                        'assets/images/dummyprofile.png',
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Darren Ng',
-                    style: TextStyle(
+                  Text(
+                    name ?? 'User',
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    email ?? '',
+                    style: const TextStyle(color: Colors.white70),
                   ),
                 ],
               ),
@@ -55,33 +103,45 @@ class ProfileScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _buildProfileMenuItem(
-                    icon: Icons.lock,
-                    title: 'Password',
-                    onTap: () {
-                      // Navigate to password screen
-                    },
+                  // _buildProfileMenuItem(
+                  //   icon: Icons.lock,
+                  //   title: 'Password',
+                  //   onTap: () {},
+                  // ),
+                  // _buildProfileMenuItem(
+                  //   icon: Icons.email,
+                  //   title: 'Email',
+                  //   onTap: () {},
+                  // ),
+                  // _buildProfileMenuItem(
+                  //   icon: Icons.edit,
+                  //   title: 'Edit Profile',
+                  //   onTap: () {},
+                  // ),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: Text(
+                      name ?? 'User',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  _buildProfileMenuItem(
-                    icon: Icons.email,
-                    title: 'Email',
-                    onTap: () {
-                      // Navigate to email screen
-                    },
-                  ),
-                  _buildProfileMenuItem(
-                    icon: Icons.edit,
-                    title: 'Edit Profile',
-                    onTap: () {
-                      // Navigate to edit profile screen
-                    },
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      email ?? 'user@example.com',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.secondary,
+                      ),
+                    ),
                   ),
                   _buildProfileMenuItem(
                     icon: Icons.logout,
                     title: 'Sign Out',
-                    onTap: () {
-                      // Handle sign out
-                    },
+                    onTap: _logout,
                   ),
                 ],
               ),
@@ -122,10 +182,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap,

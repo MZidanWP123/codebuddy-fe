@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../screens/login_screens.dart'; // Import dari folder yang sama
-import '../screens/register_screens.dart'; // Import dari folder yang sama
+//import 'package:finalprojectapp/screens/register_screens.dart';
 import '../utils/app_colors.dart'; // Import dari folder utils
 
 class AccountPage extends StatefulWidget {
@@ -49,7 +49,7 @@ class _AccountPageState extends State<AccountPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Account'),
+        title: const Text('My Account', style: TextStyle(color: Colors.white),),
         backgroundColor: AppColors.accent,
         foregroundColor: Colors.white,
         actions: [

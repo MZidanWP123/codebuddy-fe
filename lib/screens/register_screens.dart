@@ -6,6 +6,8 @@ import '../utils/app_colors.dart';
 import '../services/auth_services.dart';
 import '../services/globals.dart';
 import '../pages/account_page.dart'; 
+import '../screens/lesson_screens.dart';
+import 'package:finalprojectapp/main.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -53,6 +55,7 @@ class _SignupScreenState extends State<SignupScreen> {
           await prefs.setString('email', responseMap['user']['email']);
           await prefs.setString('token', responseMap['token']);
           await prefs.setString('name', responseMap['user']['name']);
+          await prefs.setInt('user_id', responseMap['user']['id']);
           
           if (!mounted) return;
           
@@ -60,7 +63,7 @@ class _SignupScreenState extends State<SignupScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (BuildContext context) => const AccountPage(),
+              builder: (BuildContext context) => const MainNavigationScreen(),
             ),
           );
         } else {
@@ -104,7 +107,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 40),
                 Center(
                   child: Image.asset(
-                    'assets/images/signup_illustration.png',
+                    'assets/images/Sign up-rafiki.png',
                     height: 200,
                   ),
                 ),

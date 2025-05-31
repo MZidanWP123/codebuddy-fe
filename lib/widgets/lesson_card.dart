@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../models/lesson.dart';
+import '../models/course.dart';
 import '../screens/lesson_detail_screens.dart';
 
 class LessonCard extends StatelessWidget {
-  final Lesson lesson;
+  final Course course;
 
-  const LessonCard({super.key, required this.lesson});
+  const LessonCard({super.key, required this.course});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class LessonCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => LessonDetailScreen(lesson: lesson),
+            builder: (context) => LessonDetailScreen(course: course),
           ),
         );
       },
@@ -46,7 +46,7 @@ class LessonCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    lesson.title,
+                    course.title,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -55,7 +55,7 @@ class LessonCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    lesson.description,
+                    course.description,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -69,7 +69,7 @@ class LessonCard extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => LessonDetailScreen(lesson: lesson),
+                          builder: (context) => LessonDetailScreen(course: course),
                         ),
                       );
                     },

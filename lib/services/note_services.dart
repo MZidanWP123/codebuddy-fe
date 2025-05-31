@@ -1,66 +1,86 @@
 import 'dart:convert';
 import 'package:finalprojectapp/services/globals.dart';
 import 'package:http/http.dart' as http;
+import 'package:finalprojectapp/models/notes.dart';
 
 class NoteServices {
-  // Get all notes or notes by user_id
-  static Future<http.Response> getNotes({int? userId}) async {
-    var url = Uri.parse(
-      userId != null
-          ? '$baseURL/notes?user_id=$userId'
-          : '$baseURL/notes',
+  static Future<List<Note>> getNotes({int? userId}) async {
+    final url = Uri.parse(
+      userId != null ? '${baseURL}notes?user_id=$userId' : '${baseURL}notes',
     );
+    final response = await http.get(url, headers: headers);
 
-    http.Response response = await http.get(url, headers: headers);
-    return response;
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonData = json.decode(response.body);
+      return jsonData.map((json) => Note.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load notes');
+    }
   }
 
-  // Search notes by title
-  static Future<http.Response> searchNotesByTitle(String title) async {
-    var url = Uri.parse('$baseURL/notes/search?title=$title');
-    http.Response response = await http.get(url, headers: headers);
-    return response;
+  static Future<List<Note>> searchNotesByTitle(String title) async {
+    final url = Uri.parse('${baseURL}notes/search?title=$title');
+    final response = await http.get(url, headers: headers);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonData = json.decode(response.body);
+      return jsonData.map((json) => Note.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to search notes');
+    }
   }
 
-  // Create a new note
-  static Future<http.Response> createNote({
+  static Future<bool> createNote({
     required int userId,
     required int courseId,
-    required String note,
+    required String content,
   }) async {
-    Map data = {
+    final data = {
       "user_id": userId,
       "course_id": courseId,
-      "note": note,
+      "note": content,
     };
 
-    var body = json.encode(data);
-    var url = Uri.parse('$baseURL/notes/create');
-    http.Response response = await http.post(url, headers: headers, body: body);
-    return response;
+    final response = await http.post(
+      Uri.parse('${baseURL}notes/create'),
+      headers: headers,
+      body: json.encode(data),
+    );
+
+    print("STATUS: ${response.statusCode}");
+    print("BODY: ${response.body}");
+    print("HEADERS: $headers");
+    print("userid: $userId");
+
+
+    return response.statusCode == 201;
   }
 
-  // Update a note by ID
-  static Future<http.Response> updateNote({
+  static Future<bool> updateNote({
     required int id,
+    String? content,
     String? noteTitle,
-    String? note,
   }) async {
-    Map<String, dynamic> data = {};
+    final data = <String, dynamic>{};
 
     if (noteTitle != null) data['note_title'] = noteTitle;
-    if (note != null) data['note'] = note;
+    if (content != null) data['content'] = content;
 
-    var body = json.encode(data);
-    var url = Uri.parse('$baseURL/notes/$id');
-    http.Response response = await http.put(url, headers: headers, body: body);
-    return response;
+    final response = await http.put(
+      Uri.parse('${baseURL}notes/$id'),
+      headers: headers,
+      body: json.encode(data),
+    );
+
+    return response.statusCode == 200;
   }
 
-  // Delete a note by ID
-  static Future<http.Response> deleteNote(int id) async {
-    var url = Uri.parse('$baseURL/notes/$id');
-    http.Response response = await http.delete(url, headers: headers);
-    return response;
+  static Future<bool> deleteNote(int id) async {
+    final response = await http.delete(
+      Uri.parse('${baseURL}notes/$id'),
+      headers: headers,
+    );
+
+    return response.statusCode == 200;
   }
 }
