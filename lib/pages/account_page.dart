@@ -1,7 +1,8 @@
-import 'package:finalprojectapp/pages/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'login_page.dart'; // Pastikan path ini sesuai dengan struktur project kamu
+import '../screens/login_screens.dart'; // Import dari folder yang sama
+//import 'package:finalprojectapp/screens/register_screens.dart';
+import '../utils/app_colors.dart'; // Import dari folder utils
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -15,31 +16,31 @@ class _AccountPageState extends State<AccountPage> {
   String? name;
   String? email;
   String? token;
-
-  bool isLoading = true;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    loadUserData();
+    _loadUserData();
   }
 
-  Future<void> loadUserData() async {
+  Future<void> _loadUserData() async {
     prefs = await SharedPreferences.getInstance();
     setState(() {
-      name = prefs.getString('name');
-      email = prefs.getString('email');
+      name = prefs.getString('name') ?? 'User';
+      email = prefs.getString('email') ?? 'user@example.com';
       token = prefs.getString('token');
-      isLoading = false;
+      _isLoading = false;
     });
   }
 
-  void logout() async {
+  Future<void> _logout() async {
     await prefs.clear();
+    
     if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const RegisterPage()),
+    
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
       (route) => false,
     );
   }
@@ -48,32 +49,54 @@ class _AccountPageState extends State<AccountPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Account'),
-        backgroundColor: Colors.black,
+        title: const Text('My Account', style: TextStyle(color: Colors.white),),
+        backgroundColor: AppColors.accent,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white,),
+            onPressed: _logout,
+          ),
+        ],
       ),
-      body: isLoading
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(24.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text('Name: ${name ?? "-"}'),
-                  const SizedBox(height: 8),
-                  Text('Email: ${email ?? "-"}'),
-                  const SizedBox(height: 8),
-                  Text('Token: ${token ?? "-"}'),
-                  const SizedBox(height: 32),
-                  Center(
-                    child: MaterialButton(
-                      onPressed: logout,
-                      color: Colors.red,
-                      textColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 15, horizontal: 40),
-                      child: const Text('Logout'),
+                  const SizedBox(height: 20),
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundColor: AppColors.primary,
+                    child: Text(
+                      name != null && name!.isNotEmpty ? name![0].toUpperCase() : 'U',
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accent,
+                      ),
                     ),
-                  )
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    name ?? 'User',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    email ?? 'user@example.com',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  // Tambahkan informasi profil lainnya di sini
                 ],
               ),
             ),
