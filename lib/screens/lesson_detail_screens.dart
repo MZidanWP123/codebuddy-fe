@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/course.dart';
 import '../models/notes.dart';
 import '../services/note_services.dart';
@@ -20,17 +21,36 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   bool _hasUnsavedChanges = false;
   Note? _userNote;
   bool _isLoading = true;
+  static const platform = MethodChannel('com.example.app/screenshot');
 
   @override
   void initState() {
     super.initState();
     _loadUserNote();
+    _enableScreenshotPrevention();
   }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _disableScreenshotPrevention();
     super.dispose();
+  }
+
+  Future<void> _enableScreenshotPrevention() async {
+    try {
+      await platform.invokeMethod('enableScreenshotPrevention');
+    } on PlatformException catch (e) {
+      print("Failed to enable screenshot prevention: '${e.message}'.");
+    }
+  }
+
+  Future<void> _disableScreenshotPrevention() async {
+    try {
+      await platform.invokeMethod('disableScreenshotPrevention');
+    } on PlatformException catch (e) {
+      print("Failed to disable screenshot prevention: '${e.message}'.");
+    }
   }
 
   Future<void> _loadUserNote() async {
