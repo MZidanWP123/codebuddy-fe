@@ -7,6 +7,7 @@ import 'package:finalprojectapp/screens/profile_screen.dart';
 import 'package:finalprojectapp/screens/splash_screens.dart';
 import 'package:finalprojectapp/screens/login_screens.dart';
 import 'package:finalprojectapp/screens/register_screens.dart';
+import 'package:finalprojectapp/screens/articles_screen.dart';
 import 'package:finalprojectapp/services/globals.dart';
 
 void main() async {
@@ -66,7 +67,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   
   final List<Widget> _screens = [
     const LessonScreen(),
-    const NotesScreen(),
+    const ArticlesScreen(),
     const ProfileScreen(),
   ];
 
