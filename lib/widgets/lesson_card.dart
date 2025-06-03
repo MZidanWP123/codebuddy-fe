@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/course.dart';
 import '../screens/lesson_detail_screens.dart';
 
@@ -6,6 +7,27 @@ class LessonCard extends StatelessWidget {
   final Course course;
 
   const LessonCard({super.key, required this.course});
+
+  String? _extractYouTubeVideoId(String url) {
+    RegExp regExp = RegExp(
+      r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})',
+      caseSensitive: false,
+      multiLine: false,
+    );
+    
+    Match? match = regExp.firstMatch(url);
+    return match?.group(1);
+  }
+
+  // Get YouTube thumbnail URL
+  String? _getYouTubeThumbnail(String youtubeUrl) {
+    String? videoId = _extractYouTubeVideoId(youtubeUrl);
+    if (videoId != null) {
+      // default.jpg - default quality (120x90)
+      return 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +58,31 @@ class LessonCard extends StatelessWidget {
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
                 ),
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+                child: course.videoUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: _getYouTubeThumbnail(course.videoUrl) ?? '',
+                        width: double.infinity,
+                        height: 120,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey[300],
+                        ),
+                      )
+                    : Container(
+                        color: Colors.grey[300],
+                      ),
               ),
             ),
             
