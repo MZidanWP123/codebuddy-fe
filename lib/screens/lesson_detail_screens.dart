@@ -37,30 +37,21 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final currentUserId = prefs.getInt('user_id') ?? 0;
-      final notes = await NoteServices.getNotes(
+      
+      // Coba ambil note yang sudah ada untuk course ini
+      final existingNote = await NoteServices.getNoteByUserAndCourse(
         userId: currentUserId,
-      ); // pakai userId dari auth/login
-      final lessonNote = notes.firstWhere(
-        (n) => n.lessonId == widget.course.id,
-        orElse:
-            () => Note(
-              id: '',
-              lessonTitle: widget.course.title,
-              userId: currentUserId.toString(),
-              lessonId: widget.course.id,
-              content: '',
-              createdAt: DateTime.now(),
-            ),
+        courseId: widget.course.id,
       );
 
       setState(() {
-        _userNote = lessonNote.id.isNotEmpty ? lessonNote : null;
-        _notesController.text = lessonNote.content;
+        _userNote = existingNote;
+        _notesController.text = existingNote?.note ?? ''; // Gunakan note bukan content
         _isLoading = false;
       });
     } catch (e) {
+      print('Error loading note: $e');
       setState(() => _isLoading = false);
-      // tampilkan snackbar kalau perlu
     }
   }
 
@@ -71,63 +62,89 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   }
 
   Future<void> _saveNotes() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('user_id') ?? 0;
-    print("User ID dari SharedPreferences: $userId");
-    final CourseId = int.parse(widget.course.id);
-    final content = _notesController.text.trim();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id') ?? 0;
+      final courseId = int.parse(widget.course.id);
+      final content = _notesController.text.trim();
 
-    if (_userNote != null) {
-      await NoteServices.updateNote(
-        id: int.parse(_userNote!.id),
-        content: content,
-      );
-    } else {
-      await NoteServices.createNote(
-        userId: userId,
-        courseId: CourseId,
-        content: content,
+      if (content.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Note cannot be empty')),
+        );
+        return;
+      }
+
+      bool success = false;
+
+      if (_userNote != null && _userNote!.id.isNotEmpty) {
+        // Update existing note
+        success = await NoteServices.updateNote(
+          id: int.parse(_userNote!.id),
+          content: content,
+        );
+      } else {
+        // Create new note
+        success = await NoteServices.createNote(
+          userId: userId,
+          courseId: courseId,
+          content: content,
+          courseTitle: widget.course.title,
+        );
+      }
+
+      if (success) {
+        // Reload note setelah save untuk mendapatkan data terbaru
+        await _loadUserNote();
+        
+        setState(() {
+          _isNotesVisible = false;
+          _hasUnsavedChanges = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Note saved successfully')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save note')),
+        );
+      }
+    } catch (e) {
+      print('Error saving note: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error saving note')),
       );
     }
-
-    setState(() {
-      _isNotesVisible = false;
-      _hasUnsavedChanges = false;
-    });
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Note saved successfully')));
   }
 
   void _showUnsavedChangesDialog() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Unsaved changes'),
-            content: const Text('Do you want to save or discard changes?'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _saveNotes();
-                },
-                child: const Text('Save'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _isNotesVisible = false;
-                    _notesController.clear();
-                    _hasUnsavedChanges = false;
-                  });
-                },
-                child: const Text('Discard'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Unsaved changes'),
+        content: const Text('Do you want to save or discard changes?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _saveNotes();
+            },
+            child: const Text('Save'),
           ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _isNotesVisible = false;
+                _notesController.text = _userNote?.note ?? ''; // Gunakan note bukan content
+                _hasUnsavedChanges = false;
+              });
+            },
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -216,6 +233,30 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(widget.course.description),
+                      // Tampilkan indikator jika sudah ada note
+                      if (_userNote != null && _userNote!.note.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue[200]!),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.note, color: Colors.blue[600]),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'You have notes for this course',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -237,7 +278,11 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text('Take Notes!'),
+                      child: Text(
+                        _userNote != null && _userNote!.note.isNotEmpty
+                            ? 'Edit Notes'
+                            : 'Take Notes!',
+                      ),
                     ),
                   ),
                 ),
@@ -262,12 +307,15 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  widget.course.title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                Expanded(
+                                  child: Text(
+                                    widget.course.title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 IconButton(
@@ -303,8 +351,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                                 ),
                                 onChanged: (value) {
                                   setState(() {
-                                    _hasUnsavedChanges =
-                                        value.trim().isNotEmpty;
+                                    _hasUnsavedChanges = value.trim() != (_userNote?.note ?? '');
                                   });
                                 },
                               ),

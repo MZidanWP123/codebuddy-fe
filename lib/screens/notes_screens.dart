@@ -14,12 +14,21 @@ class NotesScreen extends StatefulWidget {
 
 class _NotesScreenState extends State<NotesScreen> {
   List<Note> _notes = [];
+  List<Note> _filteredNotes = [];
   bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadUserNotes();
+    _searchController.addListener(_filterNotes);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserNotes() async {
@@ -30,13 +39,25 @@ class _NotesScreenState extends State<NotesScreen> {
       final notes = await NoteServices.getNotes(userId: userId);
       setState(() {
         _notes = notes;
+        _filteredNotes = notes;
         _isLoading = false;
       });
     } catch (e) {
-      // Optional: tampilkan error
-      print('Error loading notes: $e');
+      // Gunakan debugPrint sebagai pengganti print untuk production
+      debugPrint('Error loading notes: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  // Fungsi search yang diperbaiki
+  void _filterNotes() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredNotes = _notes.where((note) {
+        return note.noteTitle.toLowerCase().contains(query) ||  // Diubah dari lessonTitle ke noteTitle
+               note.note.toLowerCase().contains(query);          // Diubah dari content ke note
+      }).toList();
+    });
   }
 
   @override
@@ -64,8 +85,9 @@ class _NotesScreenState extends State<NotesScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: TextField(
+                  controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search here',
+                    hintText: 'Search notes...',
                     hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
                     prefixIcon: const Icon(
                       Icons.search,
@@ -93,36 +115,41 @@ class _NotesScreenState extends State<NotesScreen> {
               ),
               const SizedBox(height: 24),
               Expanded(
-                child:
-                    _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _notes.isEmpty
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _filteredNotes.isEmpty
                         ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(
-                                'assets/images/Notes-pana.png',
-                                height: 200,
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Oops! Sepertinya kamu belum',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                              const Text(
-                                'memiliki catatan apapun',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ],
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  'assets/images/Notes-pana.png',
+                                  height: 200,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _searchController.text.isNotEmpty
+                                      ? 'No notes found for "${_searchController.text}"'
+                                      : 'Oops! Sepertinya kamu belum',
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                                if (_searchController.text.isEmpty)
+                                  const Text(
+                                    'memiliki catatan apapun',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadUserNotes,
+                            child: ListView.builder(
+                              itemCount: _filteredNotes.length,
+                              itemBuilder: (context, index) {
+                                return NoteItem(note: _filteredNotes[index]);
+                              },
+                            ),
                           ),
-                        )
-                        : ListView.builder(
-                          itemCount: _notes.length,
-                          itemBuilder: (context, index) {
-                            return NoteItem(note: _notes[index]);
-                          },
-                        ),
               ),
             ],
           ),

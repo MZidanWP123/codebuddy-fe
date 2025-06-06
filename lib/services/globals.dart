@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseURL = "http://192.168.1.8:8000/api/"; // Ganti sesuai IP lokalmu
+const String baseURL = "http://192.168.18.102:8000/api/"; // Ganti sesuai IP lokalmu
 
 String? token; // Ini nanti diisi setelah login
 

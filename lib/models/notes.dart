@@ -1,29 +1,34 @@
 class Note {
   final String id;
-  final String lessonTitle;
+  final String noteTitle; // Sesuai dengan field note_title di database
   final String userId;
-  final String lessonId;
-  final String content;
+  final String courseId; // Sesuai dengan field course_id di database
+  final String note;     // Sesuai dengan field note di database
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   Note({
     required this.id,
-    required this.lessonTitle,
+    required this.noteTitle,
     required this.userId,
-    required this.lessonId,
-    required this.content,
+    required this.courseId,
+    required this.note,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   // Parsing dari satu objek JSON ke objek Note
   factory Note.fromJson(Map<String, dynamic> json) {
     return Note(
       id: json['id'].toString(),
-      lessonTitle: json['lesson_title'] ?? '',
+      noteTitle: json['note_title'] ?? '',
       userId: json['user_id'].toString(),
-      lessonId: json['lesson_id'].toString(),
-      content: json['content'] ?? '',
+      courseId: json['course_id'].toString(),
+      note: json['note'] ?? '',
       createdAt: DateTime.parse(json['created_at']),
+      updatedAt: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at']) 
+          : DateTime.parse(json['created_at']),
     );
   }
 
@@ -32,15 +37,16 @@ class Note {
     return jsonList.map((json) => Note.fromJson(json)).toList();
   }
 
-  // (Opsional) Untuk mengubah Note jadi JSON (berguna saat membuat atau update note)
+  // Untuk mengubah Note jadi JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'lesson_title': lessonTitle,
+      'note_title': noteTitle,
       'user_id': userId,
-      'lesson_id': lessonId,
-      'content': content,
+      'course_id': courseId,
+      'note': note,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }
