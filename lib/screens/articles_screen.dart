@@ -135,7 +135,7 @@ class _ArticlesScreenState extends State<ArticlesScreen> {
                   const Text(
                     'Tech Articles',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1D2A44),
                     ),

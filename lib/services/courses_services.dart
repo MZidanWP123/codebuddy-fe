@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart'; // untuk debugPrint
 import 'package:http/http.dart' as http;
 import 'package:finalprojectapp/services/globals.dart';
-import 'package:finalprojectapp/models/course.dart'; // pastikan path ini sesuai
+import 'package:finalprojectapp/models/course.dart';
 
 class CourseServices {
   // Get all courses (raw http.Response)
@@ -11,7 +12,7 @@ class CourseServices {
     return response;
   }
 
-  // Get all courses as List<Lesson>
+  // Get all courses as List<Course>
   static Future<List<Course>> fetchAllCourses() async {
     final response = await getAllCourses();
 
@@ -23,6 +24,27 @@ class CourseServices {
     }
   }
 
+  // Get course by ID - PERBAIKAN
+  static Future<Course> getCourseById(int courseId) async {
+    var url = Uri.parse('${baseURL}courses/$courseId');
+    
+    // Debug: Print URL yang akan dipanggil
+    debugPrint('Fetching course from URL: $url');
+    
+    http.Response response = await http.get(url, headers: headers);
+    
+    // Debug: Print response
+    debugPrint('Response status: ${response.statusCode}');
+    debugPrint('Response body: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      final dynamic data = jsonDecode(response.body);
+      return Course.fromJson(data);
+    } else {
+      throw Exception('Failed to load course with ID $courseId: ${response.statusCode} - ${response.body}');
+    }
+  }
+  
   // Search course by title
   static Future<http.Response> searchCourseByTitle(String title) async {
     var url = Uri.parse('$baseURL/courses/search?title=$title');

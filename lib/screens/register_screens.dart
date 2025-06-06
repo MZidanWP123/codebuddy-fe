@@ -5,8 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_colors.dart';
 import '../services/auth_services.dart';
 import '../services/globals.dart';
-import '../pages/account_page.dart'; 
-import '../screens/lesson_screens.dart';
 import 'package:finalprojectapp/main.dart';
 
 class SignupScreen extends StatefulWidget {

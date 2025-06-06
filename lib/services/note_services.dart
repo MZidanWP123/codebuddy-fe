@@ -34,11 +34,13 @@ class NoteServices {
     required int userId,
     required int courseId,
     required String content,
+    String? courseTitle,
   }) async {
     final data = {
       "user_id": userId,
       "course_id": courseId,
       "note": content,
+      "note_title": courseTitle ?? "Note for Course $courseId", // Gunakan note_title sesuai database
     };
 
     final response = await http.post(
@@ -52,7 +54,6 @@ class NoteServices {
     print("HEADERS: $headers");
     print("userid: $userId");
 
-
     return response.statusCode == 201;
   }
 
@@ -64,7 +65,7 @@ class NoteServices {
     final data = <String, dynamic>{};
 
     if (noteTitle != null) data['note_title'] = noteTitle;
-    if (content != null) data['content'] = content;
+    if (content != null) data['note'] = content;
 
     final response = await http.put(
       Uri.parse('${baseURL}notes/$id'),
@@ -82,5 +83,21 @@ class NoteServices {
     );
 
     return response.statusCode == 200;
+  }
+
+  // Method untuk mendapatkan note berdasarkan user dan course
+  static Future<Note?> getNoteByUserAndCourse({
+    required int userId,
+    required String courseId,
+  }) async {
+    try {
+      final notes = await getNotes(userId: userId);
+      return notes.firstWhere(
+        (note) => note.courseId == courseId,
+        orElse: () => throw Exception('Note not found'),
+      );
+    } catch (e) {
+      return null;
+    }
   }
 }

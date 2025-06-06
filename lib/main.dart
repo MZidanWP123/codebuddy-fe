@@ -67,6 +67,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   
   final List<Widget> _screens = [
     const LessonScreen(),
+    const NotesScreen(),
     const ArticlesScreen(),
     const ProfileScreen(),
   ];
@@ -92,6 +93,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.note),
             label: 'Notes',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.newspaper),
+            label: 'Articles',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
